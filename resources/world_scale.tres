@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="WorldScale" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/world_scale.gd" id="1_world_scale"]
+
+[resource]
+script = ExtResource("1_world_scale")
+world_size_m = 3000.0
+view_distance_m = 1500.0
+fog_opaque_distance_m = 1300.0
+zone_map_resolution = 128

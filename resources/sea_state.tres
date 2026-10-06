@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SeaState" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/sea_state.gd" id="1_sea_state"]
+
+[resource]
+script = ExtResource("1_sea_state")
+height_lagoon_m = 0.3
+height_open_min_m = 1.0
+height_open_max_m = 2.0
+wavelength_min_m = 25.0
+wavelength_max_m = 60.0
+storm_height_min_m = 8.0
+storm_height_max_m = 10.0
+storm_wavelength_min_m = 60.0
+storm_wavelength_max_m = 80.0
+storm_series_min = 3
+storm_series_max = 5
+storm_radius_m = 400.0
+storm_speed_m_s = 2.0

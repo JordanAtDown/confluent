@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+    branches: [main, "proto/**"]
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gut:
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Importer le projet
+        run: godot --headless --import
+
+      - name: Lancer les tests GUT
+        run: |
+          if ! find test -name 'test_*.gd' 2>/dev/null | grep -q .; then
+            echo "Aucun test pour l'instant."
+            exit 0
+          fi
+          godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit

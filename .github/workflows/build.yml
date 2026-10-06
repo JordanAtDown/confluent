@@ -1,0 +1,22 @@
+name: Build
+
+# Build à la demande sur la branche de son choix, pour tester un proto.
+# Les paquets sont téléchargeables dans l'artifact du run pendant 14 jours.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: Plateformes à exporter
+        type: choice
+        options: [windows, linux, web, all]
+        default: windows
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    uses: ./.github/workflows/export.yml
+    with:
+      platforms: ${{ inputs.platforms == 'all' && '["windows","linux","web"]' || format('["{0}"]', inputs.platforms) }}

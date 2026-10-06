@@ -1,0 +1,43 @@
+name: Release
+
+# Un tag v* exporte toutes les plateformes et publie une GitHub Release avec le changelog.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    uses: ./.github/workflows/export.yml
+    with:
+      platforms: '["windows","linux","web"]'
+
+  release:
+    needs: export
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # git-cliff lit tout l'historique
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Générer le changelog
+        id: cliff
+        uses: orhun/git-cliff-action@v4
+        with:
+          args: --latest --strip header
+
+      - name: Publier la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ steps.cliff.outputs.changelog }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file "$NOTES"

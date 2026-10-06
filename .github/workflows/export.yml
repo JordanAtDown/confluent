@@ -1,0 +1,97 @@
+name: Export
+
+# Workflow réutilisable : exporte les plateformes demandées et publie les paquets en artifact.
+# Appelé par build.yml, pages.yml et release.yml.
+
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        description: 'Tableau JSON des plateformes : ["windows","linux","web"]'
+        type: string
+        required: true
+      pages:
+        description: Publier aussi le build Web comme artifact GitHub Pages
+        type: boolean
+        default: false
+
+env:
+  GODOT_VERSION: "4.7.2" # à garder identique au tag de l'image ci-dessous
+
+jobs:
+  export:
+    name: Export ${{ matrix.platform }}
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.platforms) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Installer les templates d'export
+        run: |
+          # Dans un container GitHub, $HOME vaut /github/home et non /root.
+          if [ "$HOME" != /root ]; then
+            mkdir -p ~/.local/share/godot/export_templates
+            mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ~/.local/share/godot/export_templates/
+          fi
+
+      - name: Nommer le paquet
+        id: label
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            LABEL="$GITHUB_REF_NAME"
+          else
+            # ${VAR::7} est propre à bash, absent de l'image godot-ci : rester POSIX.
+            LABEL="$(echo "$GITHUB_REF_NAME" | tr '/' '-')-$(echo "$GITHUB_SHA" | cut -c1-7)"
+          fi
+          echo "name=confluent-$LABEL-$PLATFORM" >> "$GITHUB_OUTPUT"
+
+      - name: Importer le projet
+        run: godot --headless --import
+
+      - name: Exporter
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          case "$PLATFORM" in
+            windows) PRESET="Windows Desktop"; OUT=confluent.exe ;;
+            linux)   PRESET="Linux";           OUT=confluent.x86_64 ;;
+            web)     PRESET="Web";             OUT=index.html ;;
+            *) echo "Plateforme inconnue : $PLATFORM"; exit 1 ;;
+          esac
+          mkdir -p "build/$PLATFORM"
+          godot --headless --export-release "$PRESET" "build/$PLATFORM/$OUT"
+          test -f "build/$PLATFORM/$OUT"
+
+      - name: Empaqueter
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          NAME: ${{ steps.label.outputs.name }}
+        run: |
+          mkdir -p "stage/$NAME" dist
+          cp -r "build/$PLATFORM"/. "stage/$NAME/"
+          cd stage
+          if [ "$PLATFORM" = linux ]; then
+            tar -czf "../dist/$NAME.tar.gz" "$NAME"   # tar garde le bit exécutable, pas zip
+          else
+            zip -qr "../dist/$NAME.zip" "$NAME"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.label.outputs.name }}
+          path: dist/*
+          retention-days: 14
+          compression-level: 0
+
+      - name: Préparer le site GitHub Pages
+        if: inputs.pages && matrix.platform == 'web'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/web

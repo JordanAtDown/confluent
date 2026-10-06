@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+GODOT="${GODOT:-$HOME/godot/Godot_v4.7.2-stable_linux.x86_64}"
+
+if [ ! -x "$GODOT" ]; then
+    echo "pre-commit: binaire Godot introuvable ($GODOT), definir la variable GODOT" >&2
+    exit 1
+fi
+
+echo "pre-commit: lancement des tests GUT..."
+"$GODOT" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://test -ginclude_subdirs -gexit
+status=$?
+
+if [ "$status" -ne 0 ]; then
+    echo "pre-commit: tests en echec, commit annule" >&2
+    exit 1
+fi
+
+exit 0

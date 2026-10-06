@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TideCycle" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/tide_cycle.gd" id="1_tide_cycle"]
+
+[resource]
+script = ExtResource("1_tide_cycle")
+period_s = 2400.0
+range_m = 3.0
+anchor_time_scale = 10.0
+tidal_crest_min_m = -2.7
+tidal_crest_max_m = 0.3

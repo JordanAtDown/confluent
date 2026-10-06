@@ -1,0 +1,34 @@
+name: Pages
+
+# Publie le build Web de main : un lien stable, toujours à jour.
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    uses: ./.github/workflows/export.yml
+    with:
+      platforms: '["web"]'
+      pages: true
+
+  deploy:
+    needs: export
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
